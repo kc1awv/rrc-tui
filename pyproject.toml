@@ -1,0 +1,78 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rrc-tui"
+version = "0.1.0"
+description = "TUI client for RRC (Reticulum Relay Chat)"
+authors = [
+  {name = "S. Miller, KC1AWV"},
+]
+maintainers = [
+  {name = "S. Miller, KC1AWV"},
+]
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.11"
+keywords = ["reticulum", "rns", "rrc", "chat", "tui", "textual"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: End Users/Desktop",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Communications :: Chat",
+]
+dependencies = [
+  "textual>=7.2.0",
+  "cbor2>=5.6.0",
+  "rns>=0.9.6",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=9.0.2",
+  "black>=25.12.0",
+  "mypy>=1.0.0",
+  "ruff>=0.6.0",
+]
+
+[project.scripts]
+rrc-tui = "rrc_tui.main:main"
+
+[tool.setuptools]
+packages = ["rrc_tui"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+check_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = ["RNS", "RNS.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["cbor2", "cbor2.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --strict-markers"
