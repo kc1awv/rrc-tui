@@ -115,5 +115,5 @@ MIT License - see [LICENSE](LICENSE) file for details.
 ## Related Projects
 
 - [Reticulum](https://reticulum.network/) - The underlying network stack
-- [rrcd](../rrcd) - Reticulum Relay Chat Hub daemon
-- [rrc-gui](../rrc-gui) - GUI client for RRC using wxWidgets
+- [rrcd](https://github.com/kc1awv/rrcd) - Reticulum Relay Chat Hub daemon
+- [rrc-gui](https://github.com/kc1awv/rrc-gui) - GUI client for RRC using wxWidgets
