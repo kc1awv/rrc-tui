@@ -164,6 +164,11 @@ class Client:
         """Get the current nickname."""
         return self._nickname
 
+    @nickname.setter
+    def nickname(self, value: str | None) -> None:
+        """Set the nickname with validation."""
+        self.set_nickname(value)
+
     def connect(
         self,
         hub_dest_hash: bytes,
