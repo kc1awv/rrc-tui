@@ -21,12 +21,23 @@ from .constants import (
     B_RES_KIND,
     B_RES_SHA256,
     B_RES_SIZE,
+    B_WELCOME_LIMITS,
     CAP_RESOURCE_ENVELOPE,
+    DEFAULT_MAX_MSG_BODY_BYTES,
+    DEFAULT_MAX_NICK_BYTES,
+    DEFAULT_MAX_ROOM_NAME_BYTES,
+    DEFAULT_MAX_ROOMS_PER_SESSION,
+    DEFAULT_RATE_LIMIT_MSGS_PER_MINUTE,
     K_BODY,
     K_ID,
     K_NICK,
     K_ROOM,
     K_T,
+    L_MAX_MSG_BODY_BYTES,
+    L_MAX_NICK_BYTES,
+    L_MAX_ROOM_NAME_BYTES,
+    L_MAX_ROOMS_PER_SESSION,
+    L_RATE_LIMIT_MSGS_PER_MINUTE,
     RES_KIND_MOTD,
     RES_KIND_NOTICE,
     T_ERROR,
@@ -96,10 +107,14 @@ class Client:
         self.hello_body.setdefault(B_HELLO_VER, "0.1.0")
         self.hello_body.setdefault(B_HELLO_CAPS, {CAP_RESOURCE_ENVELOPE: True})
 
-        self.nickname = nickname
-
         self.link: RNS.Link | None = None
         self.rooms: set[str] = set()
+
+        self.max_nick_bytes = DEFAULT_MAX_NICK_BYTES
+        self.max_room_name_bytes = DEFAULT_MAX_ROOM_NAME_BYTES
+        self.max_msg_body_bytes = DEFAULT_MAX_MSG_BODY_BYTES
+        self.max_rooms_per_session = DEFAULT_MAX_ROOMS_PER_SESSION
+        self.rate_limit_msgs_per_minute = DEFAULT_RATE_LIMIT_MSGS_PER_MINUTE
 
         self._lock = threading.RLock()
         self._welcomed = threading.Event()
@@ -122,6 +137,32 @@ class Client:
         self._ping_stop = threading.Event()
         self._last_ping_time: float | None = None
         self.latency_ms: float | None = None
+
+        self._nickname: str | None = None
+        if nickname:
+            self.set_nickname(nickname)
+
+    def set_nickname(self, nickname: str | None) -> None:
+        """Set the nickname with validation against hub limits."""
+        if nickname is None:
+            self._nickname = None
+            return
+        
+        if not isinstance(nickname, str):
+            raise ValueError(f"Nickname must be a string (got {type(nickname).__name__})")
+        
+        nick_bytes = len(nickname.encode('utf-8'))
+        if nick_bytes > self.max_nick_bytes:
+            raise ValueError(
+                f"Nickname too long: {nick_bytes} bytes exceeds hub limit of {self.max_nick_bytes} bytes"
+            )
+        
+        self._nickname = nickname
+
+    @property
+    def nickname(self) -> str | None:
+        """Get the current nickname."""
+        return self._nickname
 
     def connect(
         self,
@@ -393,6 +434,19 @@ class Client:
         r = room.strip().lower()
         if not r:
             raise ValueError("Room name cannot be empty.")
+        
+        room_bytes = len(r.encode('utf-8'))
+        if room_bytes > self.max_room_name_bytes:
+            raise ValueError(
+                f"Room name too long: {room_bytes} bytes exceeds hub limit of {self.max_room_name_bytes} bytes"
+            )
+        
+        with self._lock:
+            if len(self.rooms) >= self.max_rooms_per_session:
+                raise ValueError(
+                    f"Cannot join more rooms: already in {len(self.rooms)} rooms (hub limit: {self.max_rooms_per_session})"
+                )
+        
         body: Any = key if (isinstance(key, str) and key) else None
         self._send(make_envelope(T_JOIN, src=self.identity.hash, room=r, body=body))
 
@@ -418,6 +472,13 @@ class Client:
             raise ValueError("Room name cannot be empty.")
         if not text.strip():
             raise ValueError("Message text cannot be empty.")
+        
+        msg_bytes = len(text.encode('utf-8'))
+        if msg_bytes > self.max_msg_body_bytes:
+            raise ValueError(
+                f"Message too long: {msg_bytes} bytes exceeds hub limit of {self.max_msg_body_bytes} bytes"
+            )
+        
         env = make_envelope(T_MSG, src=self.identity.hash, room=r, body=text)
         if self.nickname:
             env[K_NICK] = self.nickname
@@ -681,6 +742,31 @@ class Client:
 
         if t == T_WELCOME:
             logger.debug("Received T_WELCOME")
+            
+            body = env.get(K_BODY)
+            if isinstance(body, dict) and B_WELCOME_LIMITS in body:
+                limits = body[B_WELCOME_LIMITS]
+                if isinstance(limits, dict):
+                    with self._lock:
+                        if L_MAX_NICK_BYTES in limits:
+                            self.max_nick_bytes = int(limits[L_MAX_NICK_BYTES])
+                        if L_MAX_ROOM_NAME_BYTES in limits:
+                            self.max_room_name_bytes = int(limits[L_MAX_ROOM_NAME_BYTES])
+                        if L_MAX_MSG_BODY_BYTES in limits:
+                            self.max_msg_body_bytes = int(limits[L_MAX_MSG_BODY_BYTES])
+                        if L_MAX_ROOMS_PER_SESSION in limits:
+                            self.max_rooms_per_session = int(limits[L_MAX_ROOMS_PER_SESSION])
+                        if L_RATE_LIMIT_MSGS_PER_MINUTE in limits:
+                            self.rate_limit_msgs_per_minute = int(limits[L_RATE_LIMIT_MSGS_PER_MINUTE])
+                    logger.debug(
+                        "Hub limits: nick=%d, room=%d, msg=%d, max_rooms=%d, rate=%d/min",
+                        self.max_nick_bytes,
+                        self.max_room_name_bytes,
+                        self.max_msg_body_bytes,
+                        self.max_rooms_per_session,
+                        self.rate_limit_msgs_per_minute,
+                    )
+            
             self._welcomed.set()
             if self.on_welcome:
                 try:

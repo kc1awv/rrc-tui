@@ -70,7 +70,6 @@ def get_default_config() -> dict[str, Any]:
         "max_log_size_mb": 10,
         "log_backup_count": 5,
         "rate_limit_enabled": True,
-        "max_messages_per_minute": 30,
         "rate_warning_threshold": 0.8,
         "input_history_size": 50,
         "save_input_history": True,
@@ -98,7 +97,6 @@ def validate_config(config: dict[str, Any]) -> dict[str, Any]:
     int_fields = [
         "max_log_size_mb",
         "log_backup_count",
-        "max_messages_per_minute",
         "input_history_size",
         "max_messages_per_room",
         "reconnect_delay_seconds",

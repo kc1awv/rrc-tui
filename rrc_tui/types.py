@@ -15,8 +15,8 @@ from typing import Any
 # HELLO body: {0: nick, 1: name, 2: version, 3: capabilities}
 HelloBody = dict[int, str | dict[int, bool]]
 
-# WELCOME body: {0: hub_name, 1: greeting, 2: version, 3: capabilities}
-WelcomeBody = dict[int, str | dict[int, bool]]
+# WELCOME body: {0: hub_name, 1: greeting, 2: version, 3: hub_limits}
+WelcomeBody = dict[int, str | dict[int, bool | int]]
 
 # JOINED body: {0: [user_hashes]}
 JoinedBody = dict[int, list[bytes]]

@@ -35,11 +35,17 @@ from .client import Client, ClientConfig
 from .config import load_config
 from .constants import (
     B_WELCOME_HUB,
+    B_WELCOME_LIMITS,
     K_BODY,
     K_ID,
     K_NICK,
     K_ROOM,
     K_SRC,
+    L_MAX_MSG_BODY_BYTES,
+    L_MAX_NICK_BYTES,
+    L_MAX_ROOM_NAME_BYTES,
+    L_MAX_ROOMS_PER_SESSION,
+    L_RATE_LIMIT_MSGS_PER_MINUTE,
 )
 from .utils import (
     format_identity_hash,
@@ -1373,6 +1379,24 @@ class RRCTextualApp(App):
         self.hub_name = body.get(B_WELCOME_HUB, "Unknown Hub")
 
         self._show_system(f"Connected to {self.hub_name}")
+
+        if isinstance(body, dict) and B_WELCOME_LIMITS in body:
+            limits = body[B_WELCOME_LIMITS]
+            if isinstance(limits, dict):
+                limit_parts = []
+                if L_MAX_NICK_BYTES in limits:
+                    limit_parts.append(f"nick: {limits[L_MAX_NICK_BYTES]}B")
+                if L_MAX_ROOM_NAME_BYTES in limits:
+                    limit_parts.append(f"room: {limits[L_MAX_ROOM_NAME_BYTES]}B")
+                if L_MAX_MSG_BODY_BYTES in limits:
+                    limit_parts.append(f"msg: {limits[L_MAX_MSG_BODY_BYTES]}B")
+                if L_MAX_ROOMS_PER_SESSION in limits:
+                    limit_parts.append(f"rooms: {limits[L_MAX_ROOMS_PER_SESSION]}")
+                if L_RATE_LIMIT_MSGS_PER_MINUTE in limits:
+                    limit_parts.append(f"rate: {limits[L_RATE_LIMIT_MSGS_PER_MINUTE]}/min")
+                
+                if limit_parts:
+                    self._show_system(f"Hub limits: {', '.join(limit_parts)}")
 
         self.title = "RRC TUI"
 

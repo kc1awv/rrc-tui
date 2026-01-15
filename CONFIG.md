@@ -28,7 +28,6 @@ This is an example configuration file for RRC-TUI. The configuration file will b
   "max_log_size_mb": 10,
   "log_backup_count": 5,
   "rate_limit_enabled": true,
-  "max_messages_per_minute": 30,
   "rate_warning_threshold": 0.8,
   "input_history_size": 50,
   "save_input_history": true,
