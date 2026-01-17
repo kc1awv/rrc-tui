@@ -1229,7 +1229,9 @@ class RRCTextualApp(App):
                 formatted = self.message_formatter.format_command(text)
                 self._add_message(self.active_room, "command", formatted)
             else:
-                nick = self.config.get("nickname") or format_identity_hash(self.own_identity_hash or "")
+                nick = self.config.get("nickname") or format_identity_hash(
+                    self.own_identity_hash or ""
+                )
                 formatted = self.message_formatter.format_user_message(nick, text)
                 self._add_message(self.active_room, "own_msg_pending", formatted)
 
@@ -1393,8 +1395,10 @@ class RRCTextualApp(App):
                 if L_MAX_ROOMS_PER_SESSION in limits:
                     limit_parts.append(f"rooms: {limits[L_MAX_ROOMS_PER_SESSION]}")
                 if L_RATE_LIMIT_MSGS_PER_MINUTE in limits:
-                    limit_parts.append(f"rate: {limits[L_RATE_LIMIT_MSGS_PER_MINUTE]}/min")
-                
+                    limit_parts.append(
+                        f"rate: {limits[L_RATE_LIMIT_MSGS_PER_MINUTE]}/min"
+                    )
+
                 if limit_parts:
                     self._show_system(f"Hub limits: {', '.join(limit_parts)}")
 
@@ -1444,7 +1448,9 @@ class RRCTextualApp(App):
                 if pending_room == room and pending_text == body:
                     if room in self.rooms:
                         room_state = self.rooms[room]
-                        nick = self.config.get("nickname") or format_identity_hash(self.own_identity_hash or "")
+                        nick = self.config.get("nickname") or format_identity_hash(
+                            self.own_identity_hash or ""
+                        )
                         old_msg = self.message_formatter.format_user_message(nick, body)
 
                         for i, (style, msg) in enumerate(room_state.messages):
@@ -1458,9 +1464,7 @@ class RRCTextualApp(App):
                     return
 
         if src_hex and src_hex != self.own_identity_hash:
-            display_name = self.nickname_map.get(
-                src_hex, format_identity_hash(src_hex)
-            )
+            display_name = self.nickname_map.get(src_hex, format_identity_hash(src_hex))
             formatted = self.message_formatter.format_user_message(display_name, body)
             self.call_from_thread(self._add_message, room, "default", formatted)
 

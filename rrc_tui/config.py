@@ -11,6 +11,14 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
+class FirstLaunchException(Exception):
+    """Raised when a default configuration is created on first launch."""
+
+    def __init__(self, config_path: Path):
+        self.config_path = config_path
+        super().__init__(f"Default configuration created at {config_path}")
+
+
 def _expand_path(p: str) -> str:
     """Expand ~ and environment variables in path."""
     return os.path.expanduser(os.path.expandvars(p))
@@ -165,6 +173,7 @@ def load_config() -> dict[str, Any]:
     """
     config_path = get_config_path()
     saved_config = {}
+    is_first_launch = False
 
     if config_path.exists():
         logger.info(f"Loading config from {config_path}")
@@ -175,13 +184,25 @@ def load_config() -> dict[str, Any]:
             logger.warning(f"Failed to load config from {config_path}: {e}")
     else:
         logger.info(
-            f"No config file found, will use defaults. Config will be saved to {config_path}"
+            f"No config file found, creating default configuration at {config_path}"
         )
+        is_first_launch = True
 
     default_config = get_default_config()
     default_config.update(saved_config)
+    validated_config = validate_config(default_config)
 
-    return validate_config(default_config)
+    if is_first_launch:
+        try:
+            save_config(validated_config)
+            logger.info(f"Created default configuration at {config_path}")
+            raise FirstLaunchException(config_path)
+        except FirstLaunchException:
+            raise
+        except Exception as e:
+            logger.error(f"Failed to save default configuration: {e}")
+
+    return validated_config
 
 
 def save_config(config: dict[str, Any]) -> None:
