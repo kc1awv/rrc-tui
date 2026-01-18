@@ -13,7 +13,7 @@ from pathlib import Path
 
 import RNS
 from rich.text import Text
-from textual import on
+from textual import events, on
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Container, Horizontal
@@ -910,6 +910,15 @@ class RRCTextualApp(App):
 
         self.set_interval(1.0, self._update_link_status)
 
+    async def on_resize(self, event: events.Resize) -> None:
+        """Handle terminal resize event by reflowing message text."""
+        try:
+            self._update_message_display()
+            message_log = self.query_one("#message_display", RichLog)
+            message_log.refresh()
+        except Exception as e:
+            logger.debug(f"Error updating display on resize: {e}")
+
     def _safe_call_from_thread(
         self, func: Callable[..., None], *args: object, **kwargs: object
     ) -> None:
@@ -1409,12 +1418,15 @@ class RRCTextualApp(App):
             if ping_interval > 0:
                 self.client.start_ping_thread(interval=ping_interval)
 
-        auto_join = self.config.get("auto_join_room", "").strip()
-        if auto_join and self.client:
-            try:
-                self.client.join(normalize_room_name(auto_join))
-            except Exception as e:
-                logger.error(f"Failed to auto-join room: {e}")
+        auto_join_rooms = self.config.get("auto_join_rooms", [])
+        if auto_join_rooms and self.client:
+            for room in auto_join_rooms:
+                room = str(room).strip()
+                if room:
+                    try:
+                        self.client.join(normalize_room_name(room))
+                    except Exception as e:
+                        logger.error(f"Failed to auto-join room '{room}': {e}")
 
     def _handle_rrc_message(self, env: dict) -> None:
         """Handle incoming message."""

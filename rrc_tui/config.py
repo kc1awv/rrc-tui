@@ -68,7 +68,7 @@ def get_default_config() -> dict[str, Any]:
     return {
         "hub_hash": "",
         "nickname": "",
-        "auto_join_room": "",
+        "auto_join_rooms": [],
         "identity_path": default_identity_path,
         "dest_name": "rrc.hub",
         "configdir": "",
@@ -146,7 +146,6 @@ def validate_config(config: dict[str, Any]) -> dict[str, Any]:
     str_fields = [
         "hub_hash",
         "nickname",
-        "auto_join_room",
         "identity_path",
         "dest_name",
         "configdir",
@@ -157,6 +156,24 @@ def validate_config(config: dict[str, Any]) -> dict[str, Any]:
         if field in config:
             if not isinstance(config[field], str):
                 config[field] = defaults[field]
+
+    if "auto_join_rooms" in config:
+        if not isinstance(config["auto_join_rooms"], list):
+            legacy_room = config.get("auto_join_room", "")
+            if isinstance(legacy_room, str) and legacy_room.strip():
+                config["auto_join_rooms"] = [legacy_room.strip()]
+            else:
+                config["auto_join_rooms"] = defaults["auto_join_rooms"]
+        else:
+            config["auto_join_rooms"] = [
+                str(room).strip() for room in config["auto_join_rooms"] if str(room).strip()
+            ]
+    else:
+        legacy_room = config.get("auto_join_room", "")
+        if isinstance(legacy_room, str) and legacy_room.strip():
+            config["auto_join_rooms"] = [legacy_room.strip()]
+        else:
+            config["auto_join_rooms"] = defaults["auto_join_rooms"]
 
     valid_log_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
     if config.get("log_level", "").upper() not in valid_log_levels:
