@@ -1,5 +1,7 @@
 # RRC-TUI
 
+## As of Nomadnet version 1.1.0, RRC is implemented as a first-class RRC client. Development focus has been switched to Nomadnet. This repo serves as a historical archive and is not up to date with recent versions of rrcd.
+
 A Text User Interface (TUI) client for RRC (Reticulum Relay Chat).
 
 ![RRC-TUI Screenshot](/tui.png)
